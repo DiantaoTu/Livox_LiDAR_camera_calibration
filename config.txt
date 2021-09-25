@@ -1,0 +1,13 @@
+calib_camera=1
+undistort_image=1
+image_calib_path=/home/tdt/Data_tdt/livox_calib_test/camera_calib/
+image_calib_result_path=/home/tdt/Data_tdt/livox_calib_test/camera_calib_result/
+col_num=17
+row_num=12
+width=30
+lvx2pcd=1
+joint_calib=1
+lidar_path=/home/tdt/Data_tdt/livox_calib_test/camera_lidar_calib/
+joint_image_path=/home/tdt/Data_tdt/livox_calib_test/camera_lidar_calib/
+lidar_corner_path=/home/tdt/Data_tdt/livox_calib_test/camera_lidar_calib/corner_lidar_raw.txt
+joint_calib_result_path=/home/tdt/Data_tdt/livox_calib_test/joint_calib_result/
