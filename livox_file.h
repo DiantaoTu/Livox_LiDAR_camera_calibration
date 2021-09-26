@@ -35,9 +35,9 @@ typedef struct {
 } LvxDeviceInfo;
 
 typedef struct {
-  uint64_t current_offset;
-  uint64_t next_offset;
-  uint64_t frame_index;
+  uint64_t current_offset;      // 8 Byte
+  uint64_t next_offset;         // 8 Byte
+  uint64_t frame_index;         // 8 Byte
 } FrameHeader;
 
 typedef struct {

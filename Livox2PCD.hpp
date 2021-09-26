@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 13:16:51
- * @LastEditTime: 2021-09-25 13:31:16
+ * @LastEditTime: 2021-09-26 19:10:50
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/Livox2PCD.hpp
@@ -45,20 +45,30 @@ string ConvertTimeStampToStr(uint8_t *timestamp)
     return str;
 }
 
-double ConvertTimeStampToDouble(uint8_t *timestamp)
+double ConvertTimeStampToDouble(uint8_t *timestamp, int type = 0)
 {
-    int year = timestamp[0];
-    int month = timestamp[1];
-    int day = timestamp[2];
-    int hour = timestamp[3];
-    uint32_t microseconds = timestamp[4] | timestamp[5] << 8 | timestamp[6] << 16 | timestamp[7] << 24;
-    // cout << year << " " << month << " " << day << " " << hour << " " << microseconds << endl;
-    double seconds = microseconds / 1000000.f;
-    seconds += hour * 3600.f;
+    if(type == kTimestampTypeNoSync)
+    {
+        uint64_t n_sec = 0;
+        for(int i = 7; i >= 0; i--)
+            n_sec = n_sec << 8 | timestamp[i];
+        cout << n_sec << endl;
+        double second = n_sec;
+        second /= 1e9;
+        return second;
+    }
+    else 
+    {
+        int year = timestamp[0];
+        int month = timestamp[1];
+        int day = timestamp[2];
+        int hour = timestamp[3];
+        uint32_t microseconds = timestamp[4] | timestamp[5] << 8 | timestamp[6] << 16 | timestamp[7] << 24;
+        double seconds = microseconds / 1000000.f;
+        seconds += hour * 3600.f;
 
-    // cout << s << endl;
-    // return string(s);
-    return seconds;
+        return seconds;
+    }
 }
 
 int AccumulateCloud(vector<LvxBasePackDetail> &pcl_raw, string name)
@@ -72,14 +82,14 @@ int AccumulateCloud(vector<LvxBasePackDetail> &pcl_raw, string name)
         {
             LivoxExtendRawPoint point;
             memcpy(&point, packet.raw_point + i * sizeof(LivoxExtendRawPoint), sizeof(LivoxExtendRawPoint));
-            if (point.x == 0 || point.y == 0 || point.z == 0)
-                continue;
+            // if (point.x == 0 || point.y == 0 || point.z == 0)
+            //     continue;
             // 根据tag判断当前点是否为噪点，如果是噪点，就不计算了。tag的详细说明见
             // https://livox-wiki-cn.readthedocs.io/zh_CN/latest/introduction/Point_Cloud_Characteristics_and_Coordinate_System%20.html
-            // if((point.tag & 0x0c) == 4)
-            //     continue;
-            // if((point.tag & 0x03) == 1)
-            //     continue;
+            if((point.tag & 0x0c) == 4)     // 0x0c = 00001100
+                continue;
+            if((point.tag & 0x03) == 1)     // 0x03 = 00000011
+                continue;
 
             pcl::PointXYZ pt(point.x / 1000.f, point.y / 1000.f, point.z / 1000.f);
             point_cloud.push_back(pt);
@@ -87,6 +97,7 @@ int AccumulateCloud(vector<LvxBasePackDetail> &pcl_raw, string name)
     }
     pcl_raw.erase(pcl_raw.begin(), pcl_raw.begin() + idx);
     pcl::io::savePCDFileASCII(name, point_cloud);
+    return 1;
 }
 
 // 读取初始的部分 PublicHeader + PrivateHeader + DeviceInfo
@@ -110,7 +121,7 @@ int ReadHead(ifstream &lvxFile, double &frame_duration)
     cout << "device count: " << (int)private_header.device_count << endl;
     frame_duration = private_header.frame_duration / 1000.f;
 
-    LvxDeviceInfo device_info;
+    LvxDeviceInfo device_info;      // 59 Byte
     for (int i = 0; i < private_header.device_count; i++)
         lvxFile.read((char *)&device_info, sizeof(device_info));
 
@@ -135,7 +146,7 @@ int ReadData(ifstream &lvxFile, double frame_duration, double pcd_duration, stri
         frame_limit = int(pcd_duration / frame_duration);
     string base_name = lvxName.substr(0, lvxName.size() - 4);
     std::vector<LvxBasePackDetail> pcl_raw;
-    int frame_count = 0;
+    int frame_count = 0, packet_count = 0;
     int pcd_count = 0;
 
     uint64_t curr_offset = 0; // 当前文件流的偏移量
@@ -149,7 +160,6 @@ int ReadData(ifstream &lvxFile, double frame_duration, double pcd_duration, stri
 
     while (!lvxFile.eof())
     {
-        frame_count++;
         // 读取 FrameHeader
         FrameHeader frame_header;
         lvxFile.read((char *)&frame_header, sizeof(FrameHeader));
@@ -158,7 +168,7 @@ int ReadData(ifstream &lvxFile, double frame_duration, double pcd_duration, stri
         // cout << "next offset: " << frame_header.next_offset << endl;
         curr_offset = frame_header.current_offset;
         next_offset = frame_header.next_offset;
-        curr_offset += sizeof(FrameHeader);
+        curr_offset += sizeof(FrameHeader);     // 读完一个framheader后，curr_offset应该增加
         pos = lvxFile.tellg();
         if (pos == -1)
         {
@@ -229,7 +239,9 @@ int ReadData(ifstream &lvxFile, double frame_duration, double pcd_duration, stri
             {
                 pcl_raw.push_back(packet);
             }
+            packet_count++;
         }
+        frame_count++;
         if (frame_count >= frame_limit)
         {
             pcd_count++;
@@ -249,8 +261,9 @@ int ReadData(ifstream &lvxFile, double frame_duration, double pcd_duration, stri
             name = base_name + ".pcd";
         AccumulateCloud(pcl_raw, name);
     }
-    cout << "------------read lvx file data end-------------" << endl;
     cout << "frame count: " << frame_count << endl;
+    cout << "packet count: " << packet_count << endl;
+    cout << "------------read lvx file data end-------------" << endl;
     return 0;
 }
 

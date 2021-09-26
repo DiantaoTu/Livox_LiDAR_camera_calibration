@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 13:16:22
- * @LastEditTime: 2021-09-26 10:18:54
+ * @LastEditTime: 2021-09-26 11:06:43
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/main.cpp
@@ -103,8 +103,8 @@ int main(int argc, char** argv)
         camera_info.distortion.at<double>(0,4) = option.k3;
 
     }
-    cout << camera_info.intrinsic << endl;
-    cout << camera_info.distortion << endl;
+    cout << "intrinsic: " << endl << camera_info.intrinsic << endl;
+    cout << "distortion:" << endl << camera_info.distortion << endl;
     // 2. 把联合标定时需要用的雷达从lvx转换为pcd格式
     if(option.lvx2pcd)
         Livox2PCD(option.lidar_path, option.pcd_duration);
@@ -112,11 +112,9 @@ int main(int argc, char** argv)
     Eigen::Matrix4d T_cl = Eigen::Matrix4d::Identity();
     if(option.joint_calib)
         CameraLiDARCalib(option,camera_info, T_cl);
+    else 
+        ReadExtrinsic(option.joint_calib_result_path + "/extrinsic.txt", T_cl);
     // 4. 点云上色
-    T_cl << 0.0326621, -0.999465, 0.00162067, 0.0197441,
-        0.00771205, -0.00136946, -0.999969, 0.0831867,
-        0.999437, 0.0326736, 0.0076632, -0.0576599,
-        0,  0,  0,  1;
     ColorCloud(option, camera_info, T_cl);
     ProjectCloud2Image(option, camera_info, T_cl);
     return 0;
