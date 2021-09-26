@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 13:50:48
- * @LastEditTime: 2021-09-26 09:28:41
+ * @LastEditTime: 2021-09-26 11:05:46
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/base.hpp
@@ -174,6 +174,31 @@ void IterateFiles(string pathName, vector<string> &fileNames, string fileType)
         }
     }
     sort(fileNames.begin(), fileNames.end(), std::less<std::string>());
+}
+
+int ReadExtrinsic(string path, Eigen::Matrix4d& T_cl)
+{
+    ifstream f(path);
+    if(!f.is_open())
+    {
+        cout << "can not open file " << path << endl;
+        return 0;
+    }
+    T_cl = Eigen::Matrix4d::Identity();
+    for(int i = 0; i < 3; i++)
+    {
+        string line;
+        getline(f, line);
+        stringstream line_lidar(line);
+        string str;
+        for(int j = 0; j < 4; j++)
+        {
+            line_lidar >> str;
+            T_cl(i,j) = str2double(str);
+        }
+    }
+    return 0;
+    
 }
 
 #endif
