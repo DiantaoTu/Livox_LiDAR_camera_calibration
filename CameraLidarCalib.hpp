@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 14:31:26
- * @LastEditTime: 2021-09-25 13:22:04
+ * @LastEditTime: 2021-09-26 10:12:32
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/CameraLiDARCalib.hpp
@@ -83,11 +83,16 @@ void On_mouse(int event, int x, int y, int flage, void* data)
 {
     if(event == cv::EVENT_LBUTTONDOWN)
     {
+        cv::Mat img;
+        img = *(Mat*)data;
+        // int radius = img.cols
         cv::Point2f p;
         p.x = x;
         p.y = y;
         cout << "x: " << x << "  y:  " << y << endl;
         corners.push_back(p);
+        cv::circle(img, cv::Point2i(x,y), 10, cv::Scalar(0,0,255), 4);
+        cv::imshow("source", img);
     }
         
 }
@@ -156,9 +161,10 @@ int ReadImageCorner(string image, vector<cv::Point2f>& image_corner_all)
  * @description: 每次显示一张图，用鼠标在上面点出四个角，之后精细化四个角的坐标并保存
  * @param {string} image_path, 保存了用于标定的图像的文件夹
  * @param {CameraInfo} camera_info, 相机内参
+ * @param {double} scale, 图像缩放的尺寸，只影响显示不影响计算
  * @return {*}
  */
-int GetCameraCorner(string image_path, const CameraInfo camera_info, vector<cv::Point2f>& image_corner_all)
+int GetCameraCorner(string image_path, const CameraInfo camera_info, vector<cv::Point2f>& image_corner_all, double scale)
 {
     vector<string> imageNames;
     IterateFiles(image_path, imageNames, ".jpg");
@@ -173,19 +179,27 @@ int GetCameraCorner(string image_path, const CameraInfo camera_info, vector<cv::
         cv::Mat src_img = cv::imread(name);
         cv::Mat undistort_img;
         undistort(src_img, undistort_img, camera_info.intrinsic, camera_info.distortion);
+        cv::Mat show_img;   // 这是用来显示的图片
+        resize(undistort_img, show_img, cv::Size(int(undistort_img.cols * scale),int(undistort_img.rows * scale) ));
+
         cv::namedWindow("source");
-        cv::imshow("source", undistort_img);
-        cv::setMouseCallback("source",On_mouse);
+        cv::imshow("source", show_img);
+        cv::setMouseCallback("source",On_mouse, &show_img);
         cv::waitKey(0);
         // 提取亚像素精度的角点
         cv::Mat gray_img;
         cv::cvtColor(undistort_img, gray_img, cv::COLOR_BGR2GRAY);
-        cv::Size winSize = cv::Size(5, 5);
+        cv::Size winSize = cv::Size(8, 8);
         cv::Size zerozone = cv::Size(-1, -1);
         cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::MAX_ITER, 40, 0.001);
+        double inv_scale = undistort_img.rows * 1.f / show_img.rows;
+        for(int i = 0; i < corners.size(); i++)
+            corners[i] = inv_scale * corners[i];
         cv::cornerSubPix(gray_img, corners, winSize, zerozone, criteria);
         image_corner_all.insert(image_corner_all.end(), corners.begin(), corners.end());
     }
+    cv::destroyAllWindows();
+    return 1;
 }
 
 int JointCalibration(string calib_result_path, vector<PnP> pnp_all, Eigen::Matrix3d intrinsic,
@@ -265,7 +279,7 @@ int EvaluateCalibration(vector<Eigen::Vector3d> lidar_corner_all, vector<cv::Poi
         double diffY = fabs(l_proj[1] - image_corner_all[i].y);
         if(diffX + diffY > error_threshold)
         {
-            cout << "pnp data " << i << " has error larger than threshold" << endl;
+            cout << "pnp data " << i << " has error larger than threshold " << diffX + diffY << endl;
             bad_ID.insert(i);
         }
         totalX += diffX;
@@ -296,7 +310,7 @@ int CameraLiDARCalib(Option option, CameraInfo camera_info, Eigen::Matrix4d& T_c
     }
     else 
     {
-        GetCameraCorner(option.joint_image_path, camera_info, image_corner_all);
+        GetCameraCorner(option.joint_image_path, camera_info, image_corner_all, option.scale);
         ofstream f(option.joint_calib_result_path + "/image_corner.txt");
         for(cv::Point2f p : image_corner_all)
         {
@@ -326,14 +340,15 @@ int CameraLiDARCalib(Option option, CameraInfo camera_info, Eigen::Matrix4d& T_c
         cout << "all corners are good, camera LiDAR calibration finish" << endl;
         return 1;
     }
-    else if (del_ID.size() == lidar_corner_all.size())
+    else if (del_ID.size() >= lidar_corner_all.size() / 2)
     {
-        cout << "all corners are bad, maybe the error threshold is too small" << endl;
+        cout << "most of corners are bad, maybe the error threshold is too small" << endl;
         return 0;
     }
     else 
     {
         // delete pnp data with large reprojection error
+        // and re-calibrate
         vector<PnP> tmp;
         for(int i = 0; i < pnp_all.size(); i++)
             if(del_ID.count(i) > 0)
@@ -344,6 +359,8 @@ int CameraLiDARCalib(Option option, CameraInfo camera_info, Eigen::Matrix4d& T_c
         pnp_all = tmp;
         cout << "delete corners with large error and re-calibrate" << endl;
         JointCalibration(option.joint_calib_result_path, pnp_all, intrinsic, T_cl);
+        del_ID.clear();
+        EvaluateCalibration(lidar_corner_all, image_corner_all, T_cl, intrinsic, 12, del_ID);
         return 1;
     }
 

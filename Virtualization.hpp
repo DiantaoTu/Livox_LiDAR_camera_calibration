@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 18:11:14
- * @LastEditTime: 2021-09-25 14:36:20
+ * @LastEditTime: 2021-09-26 10:02:03
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/Virtualization.hpp
@@ -45,7 +45,7 @@ int ColorCloud(Option option,
             // point /= point.z;
             int u = round(point.at<double>(0,0) / point.at<double>(0,2));
             int v = round(point.at<double>(1,0) / point.at<double>(0,2));
-            if(u >= undis_img.cols || v >= undis_img.rows)
+            if(u >= undis_img.cols || v >= undis_img.rows || v < 0 || u < 0)
                 continue;
             // u,v 是坐标，那么相应的行列就是第v行第u列
             cv::Vec3b bgr = undis_img.at<cv::Vec3b>(v, u);
@@ -150,7 +150,7 @@ int ProjectCloud2Image(Option option, CameraInfo camera_info, Eigen::Matrix4d T_
                 continue;
             int u = round(point[0] / point[2]);
             int v = round(point[1] / point[2]);
-            if(u >= undis_img.cols || v >= undis_img.rows)
+            if(u >= undis_img.cols || v >= undis_img.rows || v < 0 || u < 0)
                 continue;
             
             if(point[2] >option.max_depth)

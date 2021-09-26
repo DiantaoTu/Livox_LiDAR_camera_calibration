@@ -64,7 +64,7 @@ int CameraCalib(Option option, CameraInfo& camera_info)
 			waitKey(1000); //暂停1S      
 		}
     }
-
+	cv::destroyAllWindows();
     //-------------以下是摄像机标定------------------
 
 	/*棋盘三维信息*/

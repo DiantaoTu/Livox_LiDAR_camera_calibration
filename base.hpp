@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 13:50:48
- * @LastEditTime: 2021-09-25 13:56:06
+ * @LastEditTime: 2021-09-26 09:28:41
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/base.hpp
@@ -50,6 +50,7 @@ struct Option
     string joint_image_path = "/home/tdt/Data_tdt/livox_calib_test/camera_lidar_calib/";   // 联合标定时图像的路径
     string lidar_corner_path = "/home/tdt/Data_tdt/livox_calib_test/camera_lidar_calib/corner_lidar_raw.txt";
     string joint_calib_result_path = "/home/tdt/Data_tdt/livox_calib_test/camera_lidar_calib/extrinsic.txt";
+    double scale;   // 有时候图像太大了，没法完全在屏幕上显示，因此先缩小，再显示
     
     // for virtualization
     double max_depth;       // max depth in depth map in meter

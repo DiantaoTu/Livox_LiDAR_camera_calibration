@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 13:16:22
- * @LastEditTime: 2021-09-25 14:37:45
+ * @LastEditTime: 2021-09-26 10:18:54
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/main.cpp
@@ -51,6 +51,7 @@ int main(int argc, char** argv)
         ("joint_image_path", boost::program_options::value<string>(&option.joint_image_path), "image folder for joint calibration")
         ("lidar_corner_path", boost::program_options::value<string>(&option.lidar_corner_path), "file contains lidar corner")
         ("joint_calib_result_path", boost::program_options::value<string>(&option.joint_calib_result_path))
+        ("scale",boost::program_options::value<double>(&option.scale)->default_value(1))
         ("max_depth",boost::program_options::value<double>(&option.max_depth)->default_value(6))
     ;
 
@@ -109,8 +110,13 @@ int main(int argc, char** argv)
         Livox2PCD(option.lidar_path, option.pcd_duration);
     // 3. 联合标定
     Eigen::Matrix4d T_cl = Eigen::Matrix4d::Identity();
-    CameraLiDARCalib(option,camera_info, T_cl);
+    if(option.joint_calib)
+        CameraLiDARCalib(option,camera_info, T_cl);
     // 4. 点云上色
+    T_cl << 0.0326621, -0.999465, 0.00162067, 0.0197441,
+        0.00771205, -0.00136946, -0.999969, 0.0831867,
+        0.999437, 0.0326736, 0.0076632, -0.0576599,
+        0,  0,  0,  1;
     ColorCloud(option, camera_info, T_cl);
     ProjectCloud2Image(option, camera_info, T_cl);
     return 0;
