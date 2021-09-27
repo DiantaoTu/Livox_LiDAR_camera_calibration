@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 18:11:14
- * @LastEditTime: 2021-09-26 10:02:03
+ * @LastEditTime: 2021-09-27 14:13:13
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/Virtualization.hpp
@@ -130,34 +130,42 @@ int ProjectCloud2Image(Option option, CameraInfo camera_info, Eigen::Matrix4d T_
         cv::Mat src_img = cv::imread(imageNames[i]);
         cv::Mat undis_img;
         cv::undistort(src_img, undis_img, camera_info.intrinsic, camera_info.distortion);
+        bool high_res = (undis_img.rows * undis_img.cols > 1920 * 1080);
         pcl::PointCloud<pcl::PointXYZ> cloud;
         pcl::io::loadPCDFile(pcdNames[i], cloud);
         pcl::transformPointCloud(cloud, cloud, T_cl);
         for(auto p : cloud.points)
         {
-            // cv::Vec3f point(p.x, p.y, p.z);
-            // cv::Mat point(3,1,CV_64FC1,Scalar(0));
-            // point.at<double>(0,0) = p.x;
-            // point.at<double>(1,0) = p.y;
-            // point.at<double>(2,0) = p.z;
-            // point = camera_info.intrinsic * point;
-            // // point /= point.z;
-            // int u = round(point.at<double>(0,0) / point.at<double>(0,2));
-            // int v = round(point.at<double>(1,0) / point.at<double>(0,2));
             Eigen::Vector3d point(p.x, p.y, p.z);
             point = intrinsic * point;
             if(point[2] <= 0)
                 continue;
-            int u = round(point[0] / point[2]);
-            int v = round(point[1] / point[2]);
-            if(u >= undis_img.cols || v >= undis_img.rows || v < 0 || u < 0)
-                continue;
-            
-            if(point[2] >option.max_depth)
+            float real_depth = point[2];
+            int u = ceil(point[0] / real_depth);
+            int v = ceil(point[1] / real_depth);
+            if(point[2] > option.max_depth)
                 point[2] = option.max_depth;
-            uchar depth = static_cast<unsigned char>(point[2] / option.max_depth * 255);
-            // u,v 是坐标，那么相应的行列就是第v行第u列
-            undis_img.at<cv::Vec3b>(v,u) = Gray2Color(depth);
+            uchar relative_depth = static_cast<unsigned char>(point[2] / option.max_depth * 255);
+            cv::Vec3b color = Gray2Color(relative_depth);
+            if(u < undis_img.cols && v < undis_img.rows && v > 0 && u > 0)       
+                undis_img.at<cv::Vec3b>(v,u) = color;   // u,v 是坐标，那么相应的行列就是第v行第u列
+            // if the image is high resolution, set the project point to 4 pixel for better virtualization
+            if(!high_res)
+                continue;
+            u = floor(point[0] / real_depth);
+            v = floor(point[1] / real_depth);
+            if(u < undis_img.cols && v < undis_img.rows && v > 0 && u > 0)       
+                undis_img.at<cv::Vec3b>(v,u) = color;   
+
+            u = ceil(point[0] / real_depth);
+            v = floor(point[1] / real_depth);
+            if(u < undis_img.cols && v < undis_img.rows && v > 0 && u > 0)       
+                undis_img.at<cv::Vec3b>(v,u) = color;   
+
+            u = floor(point[0] / real_depth);
+            v = ceil(point[1] / real_depth);
+            if(u < undis_img.cols && v < undis_img.rows && v > 0 && u > 0)       
+                undis_img.at<cv::Vec3b>(v,u) = color;   
             
         }
         // 把原本的路径名从 aaa/bbb/ccc/xxxx.pcd 变成 xxxx_color.pcd
