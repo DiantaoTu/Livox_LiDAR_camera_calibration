@@ -1,10 +1,6 @@
 /*
- * @Author: your name
+ * @Author: Diantao Tu
  * @Date: 2021-09-24 13:49:28
- * @LastEditTime: 2021-09-25 13:19:06
- * @LastEditors: Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: /livox_lidar_camera_calib/CameraCalib.hpp
  */
 
 #include "base.hpp"
@@ -68,9 +64,7 @@ int CameraCalib(Option option, CameraInfo& camera_info)
     //-------------以下是摄像机标定------------------
 
 	/*棋盘三维信息*/
-    int width = 30;
-    int height = 30;
-	Size square_size = Size(width, height);         /* 实际测量得到的标定板上每个棋盘格的大小 */
+	Size square_size = Size(option.width, option.height);         /* 实际测量得到的标定板上每个棋盘格的大小 */
 	vector<vector<Point3f>> object_points;   /* 保存标定板上角点的三维坐标 */
 
 	/*内外参数*/

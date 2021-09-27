@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 13:16:22
- * @LastEditTime: 2021-09-26 11:06:43
+ * @LastEditTime: 2021-09-27 12:34:16
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/main.cpp
@@ -113,8 +113,10 @@ int main(int argc, char** argv)
     if(option.joint_calib)
         CameraLiDARCalib(option,camera_info, T_cl);
     else 
-        ReadExtrinsic(option.joint_calib_result_path + "/extrinsic.txt", T_cl);
+        ReadExtrinsic(option.joint_image_path + "/extrinsic.txt", T_cl);
     // 4. 点云上色
+    if(!boost::filesystem::exists(option.joint_calib_result_path))
+        boost::filesystem::create_directories(option.joint_calib_result_path);
     ColorCloud(option, camera_info, T_cl);
     ProjectCloud2Image(option, camera_info, T_cl);
     return 0;
