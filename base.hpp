@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 13:50:48
- * @LastEditTime: 2021-09-26 19:28:19
+ * @LastEditTime: 2021-09-28 09:32:32
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/base.hpp
@@ -42,7 +42,7 @@ struct Option
     double k1, k2, k3, p1, p2;
     // for converting lvx file to pcd file
     bool lvx2pcd;
-    double pcd_duration;
+    double pcd_duration;        // 每个pcd包含的雷达扫描时间，以秒为单位，-1代表包含所有时间
     string lidar_path = "/home/tdt/Data_tdt/livox_calib_test/camera_lidar_calib/";   // 联合标定时lvx文件的路径
 
     // for joint calibration
@@ -53,7 +53,7 @@ struct Option
     double scale;   // 有时候图像太大了，没法完全在屏幕上显示，因此先缩小，再显示
     
     // for virtualization
-    double max_depth;       // max depth in depth map in meter
+    double max_depth;       // max depth in depth map, in meters
 
 };
 

@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 18:11:14
- * @LastEditTime: 2021-09-27 14:13:13
+ * @LastEditTime: 2021-09-27 14:34:48
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/Virtualization.hpp
@@ -130,7 +130,7 @@ int ProjectCloud2Image(Option option, CameraInfo camera_info, Eigen::Matrix4d T_
         cv::Mat src_img = cv::imread(imageNames[i]);
         cv::Mat undis_img;
         cv::undistort(src_img, undis_img, camera_info.intrinsic, camera_info.distortion);
-        bool high_res = (undis_img.rows * undis_img.cols > 1920 * 1080);
+        bool high_res = (undis_img.rows * undis_img.cols > 3000 * 2000);
         pcl::PointCloud<pcl::PointXYZ> cloud;
         pcl::io::loadPCDFile(pcdNames[i], cloud);
         pcl::transformPointCloud(cloud, cloud, T_cl);

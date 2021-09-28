@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 13:16:51
- * @LastEditTime: 2021-09-27 09:28:31
+ * @LastEditTime: 2021-09-27 16:32:15
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/Livox2PCD.hpp
@@ -52,7 +52,6 @@ double ConvertTimeStampToDouble(uint8_t *timestamp, int type = 0)
         uint64_t n_sec = 0;
         for(int i = 7; i >= 0; i--)
             n_sec = n_sec << 8 | timestamp[i];
-        cout << n_sec << endl;
         double second = n_sec;
         second /= 1e9;
         return second;
@@ -134,20 +133,11 @@ int ReadHead(ifstream &lvxFile, double &frame_duration)
 int ReadData(ifstream &lvxFile, double frame_duration, double pcd_duration, string lvxName)
 {
     cout << "------------read lvx file data begin-------------" << endl;
-    int frame_limit = -1;
-    if (pcd_duration <= 0)
-        frame_limit = INT32_MAX;
-    else if (int(pcd_duration * 1000) % int(frame_duration * 1000) != 0)
-    {
-        frame_limit = int(pcd_duration / frame_duration) + 1;
-        cout << "pcd duration can not divide frame duration, each pcd contains " << frame_limit << "livox frame" << endl;
-    }
-    else
-        frame_limit = int(pcd_duration / frame_duration);
     string base_name = lvxName.substr(0, lvxName.size() - 4);
     std::vector<LvxBasePackDetail> pcl_raw;
     int frame_count = 0, packet_count = 0;
     int pcd_count = 0;
+    double start_time = -1, curr_time = -1;
 
     uint64_t curr_offset = 0; // 当前文件流的偏移量
     uint64_t next_offset = 0; // 下一个FrameHeader的偏移量
@@ -240,15 +230,19 @@ int ReadData(ifstream &lvxFile, double frame_duration, double pcd_duration, stri
                 pcl_raw.push_back(packet);
             }
             packet_count++;
+            curr_time = ConvertTimeStampToDouble(packet.timestamp, packet.timestamp_type);
+            if(start_time < 0)
+                start_time = curr_time;
+            else if( (pcd_duration > 0) && (curr_time - start_time >= pcd_duration))
+            {
+                pcd_count++;
+                string name = int2str(pcd_count);
+                name = base_name + "_" + name + ".pcd";
+                AccumulateCloud(pcl_raw, name);
+                start_time = -1;        // reset start time
+            }
         }
         frame_count++;
-        if (frame_count >= frame_limit)
-        {
-            pcd_count++;
-            string name = int2str(pcd_count);
-            name = base_name + "_" + name + ".pcd";
-            AccumulateCloud(pcl_raw, name);
-        }
     }
 
     if (!pcl_raw.empty())
@@ -257,7 +251,7 @@ int ReadData(ifstream &lvxFile, double frame_duration, double pcd_duration, stri
         // 如果只保存了一个pcd文件，那就不用在后面加 _1 _2 这种后缀了
         string name = int2str(pcd_count);
         name = base_name + "_" + name + ".pcd";
-        if(pcd_duration <= 0)
+        if(pcd_count == 1)
             name = base_name + ".pcd";
         AccumulateCloud(pcl_raw, name);
     }
