@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 13:16:51
- * @LastEditTime: 2021-09-27 16:32:15
+ * @LastEditTime: 2021-09-29 17:21:36
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/Livox2PCD.hpp
@@ -72,7 +72,7 @@ double ConvertTimeStampToDouble(uint8_t *timestamp, int type = 0)
 
 int AccumulateCloud(vector<LvxBasePackDetail> &pcl_raw, string name)
 {
-    pcl::PointCloud<pcl::PointXYZ> point_cloud;
+    pcl::PointCloud<pcl::PointXYZI> point_cloud;
     int idx = 0;
     for (idx = 0; idx < pcl_raw.size(); idx++)
     {
@@ -90,7 +90,11 @@ int AccumulateCloud(vector<LvxBasePackDetail> &pcl_raw, string name)
             if((point.tag & 0x03) == 1)     // 0x03 = 00000011
                 continue;
 
-            pcl::PointXYZ pt(point.x / 1000.f, point.y / 1000.f, point.z / 1000.f);
+            pcl::PointXYZI pt;
+            pt.x = point.x / 1000.f;
+            pt.y = point.y / 1000.f;
+            pt.z = point.z / 1000.f;
+            pt.intensity = point.reflectivity;
             point_cloud.push_back(pt);
         }
     }
@@ -100,7 +104,7 @@ int AccumulateCloud(vector<LvxBasePackDetail> &pcl_raw, string name)
 }
 
 // 读取初始的部分 PublicHeader + PrivateHeader + DeviceInfo
-int ReadHead(ifstream &lvxFile, double &frame_duration)
+int ReadHead(ifstream &lvxFile)
 {
     cout << "------------read lvx file header begin-------------" << endl;
     // 先读取24字节的LvxFilePublicHeader
@@ -118,7 +122,6 @@ int ReadHead(ifstream &lvxFile, double &frame_duration)
     // cout << sizeof(LvxFilePrivateHeader) << endl;
     cout << "frame duration: " << private_header.frame_duration << endl;
     cout << "device count: " << (int)private_header.device_count << endl;
-    frame_duration = private_header.frame_duration / 1000.f;
 
     LvxDeviceInfo device_info;      // 59 Byte
     for (int i = 0; i < private_header.device_count; i++)
@@ -130,7 +133,7 @@ int ReadHead(ifstream &lvxFile, double &frame_duration)
 }
 
 // 读取数据部分 数据部分的格式为 1个FrameHeader + n个packet
-int ReadData(ifstream &lvxFile, double frame_duration, double pcd_duration, string lvxName)
+int ReadData(ifstream &lvxFile, double pcd_duration, string lvxName)
 {
     cout << "------------read lvx file data begin-------------" << endl;
     string base_name = lvxName.substr(0, lvxName.size() - 4);
@@ -283,9 +286,9 @@ int Livox2PCD(std::string lvx_file_path, double pcd_duration)
         }
         else
             cout << "converting " << name << " to pcd " << endl;
-        double frame_duration; // 每个frame包含的时间，以秒为单位
-        ReadHead(lvxFile, frame_duration);
-        ReadData(lvxFile, frame_duration, pcd_duration, name);
+        
+        ReadHead(lvxFile);
+        ReadData(lvxFile, pcd_duration, name);
 
         lvxFile.close();
     }
