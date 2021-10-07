@@ -1,10 +1,7 @@
 /*
- * @Author: your name
+ * @Author: Diantao Tu
  * @Date: 2021-09-24 13:50:48
- * @LastEditTime: 2021-09-28 09:32:32
- * @LastEditors: Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: /livox_lidar_camera_calib/base.hpp
+ * @LastEditTime: 2021-10-07 16:44:29
  */
 
 #ifndef BASE_H
@@ -152,6 +149,7 @@ string long2str(long num) {
     }
 }
 
+// 递归地遍历某个文件夹下的文件，并选出以 filtType 为结尾的文件
 void IterateFiles(string pathName, vector<string> &fileNames, string fileType)
 {
     fileNames.clear();

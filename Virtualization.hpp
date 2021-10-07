@@ -1,10 +1,7 @@
 /*
- * @Author: your name
+ * @Author: Diantao Tu
  * @Date: 2021-09-24 18:11:14
- * @LastEditTime: 2021-09-27 14:34:48
- * @LastEditors: Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: /livox_lidar_camera_calib/Virtualization.hpp
+ * @LastEditTime: 2021-10-07 16:41:29
  */
 
 #include "base.hpp"
