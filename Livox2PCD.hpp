@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-24 13:16:51
- * @LastEditTime: 2021-09-29 17:21:36
+ * @LastEditTime: 2021-10-14 09:22:26
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /livox_lidar_camera_calib/Livox2PCD.hpp
@@ -275,6 +275,11 @@ int Livox2PCD(std::string lvx_file_path, double pcd_duration)
 {
     vector<string> lvx_file_names;
     IterateFiles(lvx_file_path, lvx_file_names, ".lvx");
+    if(lvx_file_names.empty())
+    {
+        cout << "no lvx file in " << lvx_file_path << endl;
+        return 0;
+    }
     for (string name : lvx_file_names)
     {
         ifstream lvxFile;
