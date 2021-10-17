@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.4)
-project(livox_reader)
+project(livox_calib)
 
 set(CMAKE_CXX_STANDARD 11)
 
